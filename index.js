@@ -35,8 +35,12 @@ client.on('message', async msg => {
 */
 
 //copy and paste your required group id from console to the GROUP_ID variable
+<<<<<<< HEAD
 const GROUP_ID = '120363420076738705@g.us';
 const GROUP_ID_ch = '120363421963082693@g.us'; // so that msg extraction takes place from specific group
+=======
+const GROUP_ID = '120363420076738705@g.us'; // so that msg extraction takes place from specific group
+>>>>>>> dcaa0f2 (initial commit for template 1)
 
 //AFTER GETTIG THE GROUP ID PLEASE COMMENT OUT THE FUNCTION ABOVE AND UNCOMMENT THE LINE->if (msg.from !== GROUP_ID) return; IN THE FUNCTION BELOW TO READ MESSAGES FROM YOUR REQUIRED GROUP ONLY
 
