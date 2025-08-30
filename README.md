@@ -1,15 +1,27 @@
-# HOF Lineup Generator
+# HOF WhatsApp Bot - Lineup, MVP & Team Pic Generator
 
-A professional lineup design generator for sports matches. This project includes both a WhatsApp bot and a standalone web application.
+A comprehensive WhatsApp bot and web application for generating HOF (Hall of Fame) lineup designs, MVP designs, and team pic designs.
 
 ## Features
 
-- 🎨 Generate professional lineup designs
-- 📱 WhatsApp bot integration (original)
-- 🌐 Web application interface (new)
-- 🎯 Support for multiple formats (5v5, 6v6, 7v7, 8v8, 9v9, 10v10, 11v11)
-- 🎭 Multiple template designs
-- 📥 Download generated images
+### 🏆 Lineup Generator
+- Generate lineup designs from WhatsApp messages
+- Extract team information, player names, and match details
+- Support for multiple templates and cities
+- No image upload required
+
+### 🏆 MVP Generator
+- Generate MVP designs with player photos
+- Form-based input (no WhatsApp message parsing required)
+- Image upload functionality for player photos
+- Input fields for: MVP name, city, venue, date, format, game time
+- Customizable templates
+
+### 👥 Team Pic Generator
+- Generate team pic designs with team photos
+- Extract match information from WhatsApp messages
+- Image upload functionality for team photos
+- Professional team presentation designs
 
 ## Installation
 
@@ -24,38 +36,60 @@ cd hof-whatsapp-bot-lineups
 npm install
 ```
 
-## Usage
-
-### Web Application (Recommended)
-
-The web app eliminates the need for WhatsApp and provides a simple interface with dropdown selections.
-
-1. Start the web server:
+3. Start the web application:
 ```bash
 npm start
-# or
-./start-webapp.sh
-# or
-node webapp.js
 ```
 
-2. Open your browser and navigate to:
+4. Start the WhatsApp bot:
+```bash
+npm run start:bot
 ```
-http://localhost:3000
-```
 
-3. **Select template and city** from the dropdown menus, then **paste your WhatsApp message** in the text area. The app will automatically extract all the required information including:
-   - Date and game time
-   - Venue
-   - Format (5v5, 6v6, etc.)
-   - Team names
-   - Player names for both teams
+## Usage
 
-4. Click "Generate Lineup Design" to create your image
+### Web Application
 
-5. Download the generated image
+1. Open your browser and navigate to `http://localhost:3000`
+2. Select the type of design you want to generate:
+   - **Lineup**: For team lineup designs
+   - **MVP**: For MVP player designs
+   - **Team Pic**: For team photo designs
 
-**Example WhatsApp message format:**
+3. Fill in the required information:
+   - Template number
+   - City
+   - **For Lineup/Team Pic**: Paste WhatsApp message
+   - **For MVP**: Fill in form fields (player name, venue, date, format, game time)
+   - Upload image (for MVP and Team Pic)
+
+4. Click "Generate Design" to create your design
+
+### WhatsApp Bot
+
+The bot automatically monitors WhatsApp messages and generates designs based on message content:
+
+#### Lineup Messages
+- Must contain "Type : lineup" in the message
+- Extracts team information and player lists
+- No image required
+
+#### MVP Messages
+- Must contain "Type : mvp" in the message
+- Must include an image attachment
+- Extracts MVP player information
+- Player name should be marked with "(MVP)" in the message
+
+**Note**: For the web application, MVP generation uses form inputs instead of WhatsApp message parsing.
+
+#### Team Pic Messages
+- Must contain "Type : team pic" in the message
+- Must include an image attachment
+- Extracts match information
+
+## Message Formats
+
+### Lineup Message Format
 ```
 🥅HOF PICK-UP GAMES🥅
 
@@ -63,109 +97,139 @@ http://localhost:3000
 Venue: Bengaluru Football Turf, Hennur Cross
 ⚽Format: 6v6 ⚽ 
 ⌚Game Time: 8:00PM- 9:00 PM
+City: Bengaluru
 
 >🔥🔥 MAIN LIST🔥🔥
 
 Team black
 1. Charan
-2. +1
-3. +2
+2. Player2
+3. Player3
 
 Team white
-1. Juniad bhaiya (GK)
-2. Vishakh 
-3. Edwin
-
-Waitlist 
-1. 
-2. 
+1. Player4 (GK)
+2. Player5
+3. Player6
 ```
 
-**Note:** Template and City are now selected from dropdown menus, so you don't need to include "Type : Lineup X" or "City: X" in your message.
+### MVP Message Format
+```
+🥅HOF PICK-UP GAMES🥅
 
-### WhatsApp Bot (Original)
+📅Date: 30/08/2025, Saturday GAME
+Venue: Bengaluru Football Turf, Hennur Cross
+⚽Format: 6v6 ⚽ 
+⌚Game Time: 8:00PM- 9:00 PM
+City: Bengaluru
 
-If you prefer to use the WhatsApp bot:
+>🔥🔥 MAIN LIST🔥🔥
 
-1. Run the bot:
-```bash
-npm run start:bot
-# or
-node index.js
+Team black
+1. Charan
+2. Player2
+3. Player3
+
+Team white
+1. Player4 (GK)
+2. Vishakh (MVP)
+3. Player6
 ```
 
-2. Scan the QR code with your WhatsApp
-3. Send a message in the configured group with the format:
+### Team Pic Message Format
 ```
-Type : Lineup 1
-Game Time: 7:00 PM
-Date: 15th December
-City: New York
-Venue: Central Park
-Format: 5v5
+🥅HOF PICK-UP GAMES🥅
 
-Main List
-Team KFC (Black Jersey)
-1. John Doe
-2. Jane Smith
-3. Bob Johnson
-4. Alice Brown
-5. Charlie Wilson
+📅Date: 30/08/2025, Saturday GAME
+Venue: Bengaluru Football Turf, Hennur Cross
+⚽Format: 6v6 ⚽ 
+⌚Game Time: 8:00PM- 9:00 PM
+City: Bengaluru
 
-Team McDonald's (White Jersey)
-1. David Lee
-2. Sarah Kim
-3. Mike Chen
-4. Lisa Wang
-5. Tom Davis
+>🔥🔥 MAIN LIST🔥🔥
 
-Waitlist
-...
-```
+Team black
+1. Charan
+2. Player2
+3. Player3
 
-## Project Structure
-
-```
-hof-whatsapp-bot-lineups/
-├── index.js              # WhatsApp bot (original)
-├── webapp.js             # Web application server
-├── generateImage.js      # Image generation logic
-├── public/
-│   └── index.html        # Web interface
-├── templates/            # Image templates
-├── fonts/               # Custom fonts
-├── output/              # Generated images
-└── package.json
+Team white
+1. Player4 (GK)
+2. Player5
+3. Player6
 ```
 
 ## Templates
 
-- **Template 1**: Modern design with hexagonal team sections
-- **Template 2**: Classic design with side-by-side team layouts
-- **Template 3**: Modern design with green accents
-- **Template 4**: Special 6v6 format only design
+The application supports multiple templates:
 
-**Special City Templates:**
-- **Gurgaon/Gurugram**: Get special template variants for Templates 2 and 3
+- **Template 1**: Modern Hex Design
+- **Template 2**: Classic Design
+- **Template 3**: Modern Design
+- **Template 4**: 6v6 Special (6v6 format only)
 
-## Supported Formats
+Special templates are available for Gurgaon/Gurugram cities.
 
-- 5v5
-- 6v6
-- 7v7
-- 8v8
-- 9v9
-- 10v10
-- 11v11
+## File Structure
+
+```
+hof-whatsapp-bot-lineups/
+├── index.js                 # WhatsApp bot main file
+├── webapp.js               # Web application server
+├── generateImage.js        # Lineup image generator
+├── generateImageMvpTeam.js # MVP/Team Pic image generator
+├── public/
+│   └── index.html         # Web interface
+├── templates/             # Design templates
+├── fonts/                 # Font files
+├── output/               # Generated images
+├── media/                # Uploaded images
+└── package.json
+```
+
+## Configuration
+
+### WhatsApp Bot Configuration
+
+1. Update the `GROUP_ID` in `index.js` with your target WhatsApp group ID
+2. Run the bot and scan the QR code with WhatsApp Web
+3. The bot will automatically process messages from the specified group
+
+### Web Application Configuration
+
+The web application runs on port 3000 by default. You can change this by setting the `PORT` environment variable.
 
 ## Dependencies
 
-- `express`: Web server framework
+- `whatsapp-web.js`: WhatsApp Web API client
+- `express`: Web framework
 - `canvas`: Image generation
-- `whatsapp-web.js`: WhatsApp bot functionality
-- `puppeteer`: Browser automation
-- `jimp`: Image processing
+- `multer`: File upload handling
+- `qrcode-terminal`: QR code display
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Bot not connecting**: Make sure you have a stable internet connection and scan the QR code within the time limit
+2. **Image generation fails**: Check that all required fonts and templates are present in the respective directories
+3. **File upload issues**: Ensure the media directory has write permissions
+
+### Logs
+
+Check the console output for detailed error messages and processing information.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-ISC
+This project is licensed under the ISC License.
+
+## Support
+
+For support and questions, please contact the development team.

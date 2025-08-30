@@ -1,44 +1,32 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-
+const path = require('path');
+const fs = require('fs');
+const { MessageMedia } = require('whatsapp-web.js');
+const { exec } = require('child_process');
 
 const client = new Client({
     authStrategy: new LocalAuth()
 });
-
 
 client.on('qr', qr => {
     console.log('Scan this QR code with your WhatsApp:');
     qrcode.generate(qr, { small: true });
 });
 
-
 client.on('ready', () => {
     console.log('WhatsApp Bot is ready!');
 });
-
-
-const fs = require('fs');
-const { MessageMedia } = require('whatsapp-web.js');
-
-
-
-/* UNCOMMENT THIS FUNCTION, AND COMMENT OUT THE FIRST LINE OF THE NEXT FUNCTION -> if (msg.from !== GROUP_ID) return; AND SEND A MSG ON THE GROUP WHOSE ID YOU WANT USING ANOTHER NUMBER (NOT THE ONE YOU ARE LOGGED IN WITH) TO GET THE REQUIRED GROUP'S ID
-AND REPLACE IT IN ABOVE GROUP_ID VARIABLE, */
-/*
-client.on('message', async msg => {
-  console.log(`Received message from: ${msg.from}`);
-  const chat = await msg.getChat();
-  console.log(`Chat name: ${chat.name}`);
-  console.log(`Chat ID: ${chat.id._serialized}`);
-});
-*/
 
 //copy and paste your required group id from console to the GROUP_ID variable
 const GROUP_ID = '120363420076738705@g.us';
 const GROUP_ID_ch = '120363421963082693@g.us'; // so that msg extraction takes place from specific group
 
-//AFTER GETTIG THE GROUP ID PLEASE COMMENT OUT THE FUNCTION ABOVE AND UNCOMMENT THE LINE->if (msg.from !== GROUP_ID) return; IN THE FUNCTION BELOW TO READ MESSAGES FROM YOUR REQUIRED GROUP ONLY
+// Ensure media directory exists
+const mediaFolder = path.join(__dirname, 'media');
+if (!fs.existsSync(mediaFolder)) {
+    fs.mkdirSync(mediaFolder, { recursive: true });
+}
 
 client.on('message', async msg => {
   // Ignore if not from our target group
@@ -46,12 +34,30 @@ client.on('message', async msg => {
 
   const body = msg.body.trim();
   
-  // New detection logic: Type 
-  if (!body.toLowerCase().includes('type : lineup')) return;
+  // Check for different message types
+  const isLineup = body.toLowerCase().includes('type : lineup');
+  const isMvp = body.toLowerCase().includes('type : mvp');
+  const isTeamPic = body.toLowerCase().includes('type : team pic');
+  
+  if (!isLineup && !isMvp && !isTeamPic) return;
 
-  console.log('\nMatch Message Detected!\n');
+  console.log('\nMessage Detected!');
+  console.log('Type:', isLineup ? 'Lineup' : isMvp ? 'MVP' : 'Team Pic');
 
   const lines = body.split('\n');
+
+  // Handle Lineup messages (no image required)
+  if (isLineup) {
+    await handleLineupMessage(msg, lines);
+  }
+  // Handle MVP and Team Pic messages (image required)
+  else if (isMvp || isTeamPic) {
+    await handleImageMessage(msg, lines, isMvp ? 'mvp' : 'team_pic');
+  }
+});
+
+async function handleLineupMessage(msg, lines) {
+  console.log('Processing Lineup Message...');
 
   //data object
   const data = {
@@ -205,8 +211,6 @@ if (currentTeam && /^\d+\./.test(trimmedLine)) {
   }
 
   // Generate image with parsed data
-  const { exec } = require('child_process');
-
   const {matchId, team1, team2, date, venue, city, format, team1Players, team2Players ,time, templateNumber} = data;
 
   const command = `node generateImage.js "${matchId}" "${team1}" "${team2}" "${date}" "${city}" "${format}" "${venue}" "${team1Players.join(',')}" "${team2Players.join(',')}" "${time}" "${templateNumber}"`;
@@ -240,6 +244,189 @@ if (currentTeam && /^\d+\./.test(trimmedLine)) {
       console.error("Output image not found.");
     }
   });
-});
+}
+
+async function handleImageMessage(msg, lines, type) {
+  console.log(`Processing ${type} Message...`);
+
+  // Check if message has media
+  if (!msg.hasMedia) {
+    console.error('No image attached, skipping.');
+    return;
+  }
+
+  let data = {};
+  
+  if (type === 'mvp') {
+    data = { 
+      matchId: '', 
+      city: '', 
+      venue: '', 
+      time: '', 
+      date: '', 
+      format: '', 
+      playerName: '', 
+      imageUrl: '', 
+      templateNumber: '' 
+    };
+
+    for (let line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      if (trimmedLine.toLowerCase().includes('type :')) {
+        const m = trimmedLine.match(/type\s*:\s*(?:mvp\s*)?(\d+)/i);
+        if (m) data.templateNumber = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('game time:')) {
+        const m = trimmedLine.match(/game time:\s*(.+)/i);
+        if (m) data.time = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('date:')) {
+        const m = trimmedLine.match(/date:\s*(.+)/i);
+        if (m) data.date = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('city:')) {
+        const m = trimmedLine.match(/city:\s*(.+)/i);
+        if (m) data.city = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('venue:')) {
+        const m = trimmedLine.match(/venue:\s*(.+)/i);
+        if (m) data.venue = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('format:')) {
+        const m = trimmedLine.match(/format:\s*(.+)/i);
+        if (m) data.format = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('(mvp')) {
+        let m = trimmedLine.split('(mvp)')[0].trim();
+        m = m.match(/^\d+\.\s*([A-Za-z\s]+)/);
+        if (m) {
+          data.playerName = m[1].trim();
+          break;
+        }
+      }
+    }
+
+    if (!data.playerName || !data.city || !data.date || !data.format || !data.time || !data.venue) {
+      console.error('Missing required MVP data, skipping message.');
+      return;
+    }
+
+    data.matchId = `${data.playerName}_${data.city}_mvp`;
+    console.log('MVP Match ID:', data.matchId);
+  } else if (type === 'team_pic') {
+    data = { 
+      matchId: '', 
+      city: '', 
+      venue: '', 
+      time: '', 
+      date: '', 
+      format: '', 
+      imageUrl: '', 
+      templateNumber: ''
+    };
+
+    for (let line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      if (trimmedLine.toLowerCase().includes('type :')) {
+        const m = trimmedLine.match(/type\s*:\s*(?:team pic\s*)?(\d+)/i);
+        if (m) data.templateNumber = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('game time:')) {
+        const m = trimmedLine.match(/game time:\s*(.+)/i);
+        if (m) data.time = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('date:')) {
+        const m = trimmedLine.match(/date:\s*(.+)/i);
+        if (m) data.date = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('city:')) {
+        const m = trimmedLine.match(/city:\s*(.+)/i);
+        if (m) data.city = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('venue:')) {
+        const m = trimmedLine.match(/venue:\s*(.+)/i);
+        if (m) data.venue = m[1].trim();
+      }
+      if (trimmedLine.toLowerCase().includes('format:')) {
+        const m = trimmedLine.match(/format:\s*(.+)/i);
+        if (m) data.format = m[1].trim();
+      }
+    }
+
+    if (!data.city || !data.date || !data.format || !data.time || !data.venue) {
+      console.error('Missing required team pic data, skipping message.');
+      return;
+    }
+
+    data.matchId = `${data.city}_${data.venue}_teampic`;
+    console.log('Team Pic Match ID:', data.matchId);
+  }
+
+  // Download media
+  try {
+    const media = await msg.downloadMedia();
+    const filename = `${data.matchId}.jpg`;
+    const savedMediaPath = path.join(mediaFolder, filename);
+    fs.writeFileSync(savedMediaPath, media.data, 'base64');
+    data.imageUrl = savedMediaPath;
+    console.log('Media saved:', savedMediaPath);
+  } catch (error) {
+    console.error('Error downloading media:', error);
+    return;
+  }
+
+  console.log('Parsed Data:', data);
+
+  // Run generateImage.js for MVP/Team Pic
+  let command = '';
+  if (type === 'mvp') {
+    const {matchId, date, venue, city, format, time, templateNumber, imageUrl, playerName} = data;
+    command = `node generateImageMvpTeam.js "${matchId}" "${date}" "${venue}" "${city}" "${format}" "${time}" "${templateNumber}" "${imageUrl}" "${playerName}"`;
+    console.log('Executing MVP command:', command);
+  } else {
+    const {matchId, date, venue, city, format, time, templateNumber, imageUrl} = data;
+    command = `node generateImageMvpTeam.js "${matchId}" "${date}" "${venue}" "${city}" "${format}" "${time}" "${templateNumber}" "${imageUrl}"`;
+    console.log('Executing Team Pic command:', command);
+  }
+
+  exec(command, (error, stdout) => {
+    if (error) {
+      console.error('generateImageMvpTeam.js error:', error.message);
+      return;
+    }
+    console.log('Generator output:', stdout);
+
+    const finalImagePath = path.join(__dirname, 'output', `${data.matchId}_final.png`);
+    if (!fs.existsSync(finalImagePath)) {
+      console.error('Final image not found:', finalImagePath);
+      return;
+    }
+
+    const mediaToSend = MessageMedia.fromFilePath(finalImagePath);
+    client.sendMessage(msg.from, mediaToSend).then(() => {
+      console.log('Sent final design to group.');
+
+      // Delete after 30s
+      setTimeout(() => {
+        try {
+          if (fs.existsSync(finalImagePath)) {
+            fs.unlinkSync(finalImagePath);
+            console.log('Deleted final image.');
+          }
+          if (fs.existsSync(data.imageUrl)) {
+            fs.unlinkSync(data.imageUrl);
+            console.log('Deleted original media.');
+          }
+        } catch (err) {
+          console.error('Deletion error:', err.message);
+        }
+      }, 30000);
+    });
+  });
+}
 
 client.initialize();

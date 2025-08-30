@@ -2,14 +2,42 @@ const express = require('express');
 const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'media');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + '.jpg');
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
 
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/output', express.static('output'));
+app.use('/media', express.static('media'));
 
 // Ensure output directory exists
 if (!fs.existsSync('./output')) {
@@ -131,12 +159,91 @@ function parseWhatsAppMessage(messageText) {
     return data;
 }
 
+function parseMvpMessage(message) {
+    const data = {};
+    
+    // Extract city
+    const cityMatch = message.match(/City:\s*([^\n]+)/i);
+    if (cityMatch) {
+        data.city = cityMatch[1].trim();
+    }
+    
+    // Extract game time
+    const timeMatch = message.match(/Game Time:\s*([^\n]+)/i);
+    if (timeMatch) {
+        data.time = timeMatch[1].trim();
+    }
+    
+    // Extract date
+    const dateMatch = message.match(/Date:\s*([^\n]+)/i);
+    if (dateMatch) {
+        data.date = dateMatch[1].trim();
+    }
+    
+    // Extract format
+    const formatMatch = message.match(/Format:\s*([^\n]+)/i);
+    if (formatMatch) {
+        data.format = formatMatch[1].trim();
+    }
+    
+    // Extract venue
+    const venueMatch = message.match(/Venue:\s*([^\n]+)/i);
+    if (venueMatch) {
+        data.venue = venueMatch[1].trim();
+    }
+    
+    // Extract MVP player name (look for player with (mvp) tag)
+    const mvpMatch = message.match(/(\d+\.\s*[^(]+)\s*\(mvp\)/i);
+    if (mvpMatch) {
+        data.playerName = mvpMatch[1].replace(/^\d+\.\s*/, '').trim();
+    }
+    
+    return data;
+}
+
+function parseTeamPicMessage(message) {
+    const lines = message.split('\n');
+    const data = {
+        matchId: '',
+        city: '',
+        venue: '',
+        time: '',
+        date: '',
+        format: '',
+        templateNumber: ''
+    };
+
+    for (let line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        if (trimmedLine.toLowerCase().includes('game time:')) {
+            const m = trimmedLine.match(/game time:\s*(.+)/i);
+            if (m) data.time = m[1].trim();
+        }
+        if (trimmedLine.toLowerCase().includes('date:')) {
+            const m = trimmedLine.match(/date:\s*(.+)/i);
+            if (m) data.date = m[1].trim();
+        }
+        if (trimmedLine.toLowerCase().includes('venue:')) {
+            const m = trimmedLine.match(/venue:\s*(.+)/i);
+            if (m) data.venue = m[1].trim();
+        }
+        if (trimmedLine.toLowerCase().includes('format:')) {
+            const m = trimmedLine.match(/format:\s*(.+)/i);
+            if (m) data.format = m[1].trim();
+        }
+    }
+
+    return data;
+}
+
 // Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/generate-lineup', async (req, res) => {
+app.post('/generate-lineup', upload.none(), async (req, res) => {
     try {
         const { templateNumber, city, messageText } = req.body;
 
@@ -199,6 +306,152 @@ app.post('/generate-lineup', async (req, res) => {
                     extractedData: data
                 });
             }
+        });
+
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).json({ 
+            error: 'Internal server error. Please try again.' 
+        });
+    }
+});
+
+app.post('/generate-mvp', upload.single('image'), async (req, res) => {
+    try {
+        const { city, venue, date, format, time, playerName } = req.body;
+
+        if (!city || !venue || !date || !format || !time || !playerName || !playerName.trim()) {
+            return res.status(400).json({ 
+                error: 'Please provide all required fields: city, venue, date, format, game time, and player name.' 
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ 
+                error: 'Please upload an image for the MVP.' 
+            });
+        }
+
+        // Create data object from form inputs with default template
+        const data = {
+            templateNumber: '1', // Default template for MVP
+            city: city,
+            venue: venue,
+            date: date,
+            format: format,
+            time: time,
+            playerName: playerName,
+            imageUrl: req.file.path,
+            matchId: `${playerName}_${city}_mvp`
+        };
+
+        console.log('MVP Data:', data);
+
+        // Build command for generateImageMvpTeam.js
+        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}" "${data.playerName}"`;
+
+        console.log("Generating MVP design...");
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error running generateImageMvpTeam.js: ${error.message}`);
+                return res.status(500).json({ 
+                    error: 'Failed to generate image. Please try again.',
+                    extractedData: data
+                });
+            }
+
+            console.log(stdout);
+            
+            const finalImagePath = `./output/${data.matchId}_final.png`;
+            if (!fs.existsSync(finalImagePath)) {
+                return res.status(500).json({ 
+                    error: 'Image generation completed but file not found.',
+                    extractedData: data
+                });
+            }
+
+            res.json({ 
+                success: true, 
+                imageUrl: `/output/${data.matchId}_final.png`,
+                matchId: data.matchId,
+                extractedData: data
+            });
+        });
+
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).json({ 
+            error: 'Internal server error. Please try again.' 
+        });
+    }
+});
+
+app.post('/generate-team-pic', upload.single('image'), async (req, res) => {
+    try {
+        const { city, messageText } = req.body;
+
+        if (!city || !messageText || !messageText.trim()) {
+            return res.status(400).json({ 
+                error: 'Please provide city and message text.' 
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ 
+                error: 'Please upload an image for the team pic.' 
+            });
+        }
+
+        // Parse the WhatsApp message
+        const data = parseTeamPicMessage(messageText);
+
+        // Add template and city from form with default template
+        data.templateNumber = '1'; // Default template for team pic
+        data.city = city;
+        data.imageUrl = req.file.path;
+
+        // Generate match ID
+        data.matchId = `${data.city}_${data.venue}_teampic`;
+
+        // Validate required data
+        if (!data.date || !data.time || !data.venue || !data.format) {
+            return res.status(400).json({ 
+                error: 'Could not extract all required information from the message. Please check the format and try again.',
+                extractedData: data
+            });
+        }
+
+        // Build command for generateImageMvpTeam.js
+        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}"`;
+
+        console.log("Generating team pic design...");
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error running generateImageMvpTeam.js: ${error.message}`);
+                return res.status(500).json({ 
+                    error: 'Failed to generate image. Please try again.',
+                    extractedData: data
+                });
+            }
+
+            console.log(stdout);
+            
+            const finalImagePath = `./output/${data.matchId}_final.png`;
+            if (!fs.existsSync(finalImagePath)) {
+                return res.status(500).json({ 
+                    error: 'Image generation completed but file not found.',
+                    extractedData: data
+                });
+            }
+
+            res.json({ 
+                success: true, 
+                imageUrl: `/output/${data.matchId}_final.png`,
+                matchId: data.matchId,
+                extractedData: data
+            });
         });
 
     } catch (error) {

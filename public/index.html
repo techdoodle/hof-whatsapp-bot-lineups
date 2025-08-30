@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HOF Lineup Generator</title>
+    <title>HOF Design Generator</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -47,6 +47,39 @@
 
         .form-container {
             padding: 40px;
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            color: #495057;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .type-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .type-btn:hover {
+            transform: translateY(-2px);
         }
 
         .dropdown-section {
@@ -81,7 +114,7 @@
             font-size: 1.1rem;
         }
 
-        .form-group select {
+        .form-group select, .form-group input {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e9ecef;
@@ -91,7 +124,7 @@
             background: white;
         }
 
-        .form-group select:focus {
+        .form-group select:focus, .form-group input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -118,6 +151,60 @@
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .image-upload-section {
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .image-upload-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload label {
+            display: block;
+            padding: 20px;
+            border: 3px dashed #dee2e6;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .file-upload label:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload label.dragover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 15px;
+            border-radius: 8px;
+            display: none;
         }
 
         .example-section {
@@ -290,20 +377,30 @@
             .form-group textarea {
                 min-height: 300px;
             }
+
+            .type-selector {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏆 HOF Lineup Generator</h1>
-            <p>Select template & city, then paste your WhatsApp message</p>
+            <h1>🏆 HOF Design Generator</h1>
+            <p>Generate Lineup, MVP, and Team Pic designs</p>
         </div>
 
         <div class="form-container">
-            <div class="example-section">
+            <div class="type-selector">
+                <button type="button" class="type-btn active" data-type="lineup">📋 Lineup</button>
+                <button type="button" class="type-btn" data-type="mvp">🏆 MVP</button>
+                <button type="button" class="type-btn" data-type="team-pic">👥 Team Pic</button>
+            </div>
+
+            <div class="example-section" id="exampleSection">
                 <h3>📋 Example Message Format</h3>
-                <div class="example-text">🥅HOF PICK-UP GAMES🥅
+                <div class="example-text" id="exampleText">🥅HOF PICK-UP GAMES🥅
 
 📅Date: 30/08/2025, Saturday GAME
 Venue: Bengaluru Football Turf, Hennur Cross
@@ -361,8 +458,8 @@ Feel free to reach out to HoF Reps for any queries or confirmations. Let's have 
 Note: HoF is not responsible for any injuries, loss, or theft on the premises**</div>
             </div>
 
-            <form id="lineupForm">
-                <div class="dropdown-section">
+            <form id="designForm">
+                <div class="dropdown-section" id="templateSection">
                     <h3>🎨 Template & Location</h3>
                     
                     <div class="form-group">
@@ -378,7 +475,10 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
                             💡 <strong>Template 4</strong> only works with 6v6 format. <strong>Gurgaon/Gurugram</strong> cities get special template variants.
                         </small>
                     </div>
+                </div>
 
+                <div class="dropdown-section" id="citySection">
+                    <h3>📍 Location</h3>
                     <div class="form-group">
                         <label for="city">City *</label>
                         <select id="city" name="city" required>
@@ -400,7 +500,44 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
                     </div>
                 </div>
 
-                <div class="input-section">
+                <div class="form-group" id="playerNameGroup" style="display: none;">
+                    <label for="playerName">Player Name (MVP) *</label>
+                    <input type="text" id="playerName" name="playerName" placeholder="Enter the MVP player name">
+                </div>
+
+                <div class="form-group" id="venueGroup" style="display: none;">
+                    <label for="venue">Venue *</label>
+                    <input type="text" id="venue" name="venue" placeholder="Enter the venue">
+                </div>
+
+                <div class="form-group" id="dateGroup" style="display: none;">
+                    <label for="date">Date *</label>
+                    <input type="text" id="date" name="date" placeholder="Enter the date (e.g., 30/08/2025, Saturday GAME)">
+                </div>
+
+                <div class="form-group" id="formatGroup" style="display: none;">
+                    <label for="format">Format *</label>
+                    <input type="text" id="format" name="format" placeholder="Enter the format (e.g., 6v6)">
+                </div>
+
+                <div class="form-group" id="timeGroup" style="display: none;">
+                    <label for="time">Game Time *</label>
+                    <input type="text" id="time" name="time" placeholder="Enter the game time (e.g., 8:00PM- 9:00 PM)">
+                </div>
+
+                <div class="image-upload-section" id="imageUploadSection" style="display: none;">
+                    <h3>📸 Upload Image</h3>
+                    <div class="file-upload">
+                        <input type="file" id="imageUpload" name="image" accept="image/*">
+                        <label for="imageUpload" id="uploadLabel">
+                            <div>📁 Click to upload or drag and drop</div>
+                            <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">Supports: JPG, PNG, GIF</div>
+                        </label>
+                        <img id="previewImage" class="preview-image" alt="Preview">
+                    </div>
+                </div>
+
+                <div class="input-section" id="messageSection">
                     <div class="form-group">
                         <label for="messageText">📱 Paste your WhatsApp message here:</label>
                         <textarea 
@@ -414,12 +551,12 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
 
                 <div class="submit-section">
                     <button type="submit" class="generate-btn" id="generateBtn">
-                        🎨 Generate Lineup Design
+                        🎨 Generate Design
                     </button>
                     
                     <div class="loading" id="loading">
                         <div class="spinner"></div>
-                        <p>Generating your lineup design...</p>
+                        <p>Generating your design...</p>
                     </div>
                 </div>
             </form>
@@ -434,8 +571,8 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
 
             <!-- Result Section -->
             <div class="result-section" id="resultSection">
-                <h3>🎉 Your Lineup Design is Ready!</h3>
-                <img id="resultImage" src="" alt="Generated lineup">
+                <h3>🎉 Your Design is Ready!</h3>
+                <img id="resultImage" src="" alt="Generated design">
                 <br>
                 <a href="" class="download-btn" id="downloadBtn" download>📥 Download Image</a>
             </div>
@@ -443,8 +580,206 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
     </div>
 
     <script>
+        let currentType = 'lineup';
+
+        // Type selector functionality
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                currentType = this.dataset.type;
+                updateFormForType();
+            });
+        });
+
+        function updateFormForType() {
+            const playerNameGroup = document.getElementById('playerNameGroup');
+            const venueGroup = document.getElementById('venueGroup');
+            const dateGroup = document.getElementById('dateGroup');
+            const formatGroup = document.getElementById('formatGroup');
+            const timeGroup = document.getElementById('timeGroup');
+            const imageUploadSection = document.getElementById('imageUploadSection');
+            const messageSection = document.getElementById('messageSection');
+            const exampleSection = document.getElementById('exampleSection');
+            const exampleText = document.getElementById('exampleText');
+            const generateBtn = document.getElementById('generateBtn');
+            const templateSection = document.getElementById('templateSection');
+            const citySection = document.getElementById('citySection');
+            const templateNumber = document.getElementById('templateNumber');
+            const city = document.getElementById('city');
+            const messageText = document.getElementById('messageText');
+
+            // Reset form
+            document.getElementById('designForm').reset();
+            document.getElementById('previewImage').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('extractedData').style.display = 'none';
+
+            if (currentType === 'lineup') {
+                playerNameGroup.style.display = 'none';
+                venueGroup.style.display = 'none';
+                dateGroup.style.display = 'none';
+                formatGroup.style.display = 'none';
+                timeGroup.style.display = 'none';
+                imageUploadSection.style.display = 'none';
+                messageSection.style.display = 'block';
+                exampleSection.style.display = 'block';
+                templateSection.style.display = 'block';
+                citySection.style.display = 'block';
+                templateNumber.required = true; // Template is required for lineup
+                city.required = true; // City is required for lineup
+                messageText.required = true; // Message is required for lineup
+                generateBtn.textContent = '🎨 Generate Lineup Design';
+                
+                // Lineup example
+                exampleText.textContent = `🥅HOF PICK-UP GAMES🥅
+
+📅Date: 30/08/2025, Saturday GAME
+Venue: Bengaluru Football Turf, Hennur Cross
+⚽Format: 6v6 ⚽ 
+⌚Game Time: 8:00PM- 9:00 PM
+⌚Reporting Time: 7:45 PM
+💰Price: 166/- per person
+
+⚽RECORDED GAME⚽
+⚽Social Media engagement and medals for best players of the game⚽
+Add your name to the list or type "in" to get added
+
+>🔥🔥 MAIN LIST🔥🔥
+
+Team black
+
+1. Charan
+2. +1
+3. +2
+4. +3
+5. +4
+6. +5
+
+Team white
+
+1. Juniad bhaiya (GK)
+2. Vishakh 
+3. Edwin
+4. ⁠jackson
+5. harsh
+6. Anto
+
+Waitlist 
+1. 
+2. 
+3. 
+4. 
+
+✅ 2 Steps to Confirm Your Slot:
+
+1️⃣ Pay via UPI: karnguptaprivate123@okaxis
+2️⃣ DM payment screenshot to:
+📲 Karn : @8169875922
+⸻
+
+⚠ IMPORTANT NOTICE:
+
+⌛ Unconfirmed slots will be offered to waitlist 4 hours before kick-off
+🚫 No backout allowed within 2 hours of game. Payment is still mandatory if done.
+📹 Full match recordings will be uploaded on HoF's YouTube channel within 48 hours
+
+⸻
+Feel free to reach out to HoF Reps for any queries or confirmations. Let's have a solid game night! ⚽🔥
+
+Note: HoF is not responsible for any injuries, loss, or theft on the premises**`;
+            } else if (currentType === 'mvp') {
+                playerNameGroup.style.display = 'block';
+                venueGroup.style.display = 'block';
+                dateGroup.style.display = 'block';
+                formatGroup.style.display = 'block';
+                timeGroup.style.display = 'block';
+                imageUploadSection.style.display = 'block';
+                messageSection.style.display = 'none';
+                exampleSection.style.display = 'none';
+                templateSection.style.display = 'none';
+                citySection.style.display = 'block';
+                templateNumber.required = false; // Template is not required for MVP
+                city.required = true; // City is required for MVP
+                messageText.required = false; // Message is not required for MVP
+                generateBtn.textContent = '🏆 Generate MVP Design';
+            } else if (currentType === 'team-pic') {
+                playerNameGroup.style.display = 'none';
+                venueGroup.style.display = 'none';
+                dateGroup.style.display = 'none';
+                formatGroup.style.display = 'none';
+                timeGroup.style.display = 'none';
+                imageUploadSection.style.display = 'block';
+                messageSection.style.display = 'block';
+                exampleSection.style.display = 'block';
+                templateSection.style.display = 'none';
+                citySection.style.display = 'block';
+                templateNumber.required = false; // Template is not required for Team Pic
+                city.required = true; // City is required for Team Pic
+                messageText.required = true; // Message is required for Team Pic
+                generateBtn.textContent = '👥 Generate Team Pic Design';
+                
+                // Team pic example
+                exampleText.textContent = `Type : team pic 1
+City: Hyderabad 
+Date: 29/8/25
+Format: 5v5
+Venue: foodball park 
+Game time: 9:30PM - 10:30PM`;
+            }
+        }
+
+        // Image upload functionality
+        const imageUpload = document.getElementById('imageUpload');
+        const previewImage = document.getElementById('previewImage');
+        const uploadLabel = document.getElementById('uploadLabel');
+
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Drag and drop functionality
+        uploadLabel.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        uploadLabel.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        uploadLabel.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageUpload.files = files;
+                const file = files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
         // Form submission
-        document.getElementById('lineupForm').addEventListener('submit', async function(e) {
+        document.getElementById('designForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const generateBtn = document.getElementById('generateBtn');
@@ -461,19 +796,60 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
             loading.style.display = 'block';
 
             // Get the form data
-            const templateNumber = document.getElementById('templateNumber').value;
+            const templateNumber = currentType === 'lineup' ? document.getElementById('templateNumber').value : '1';
             const city = document.getElementById('city').value;
             const messageText = document.getElementById('messageText').value;
+            const playerName = document.getElementById('playerName').value;
+            const venue = document.getElementById('venue').value;
+            const date = document.getElementById('date').value;
+            const format = document.getElementById('format').value;
+            const time = document.getElementById('time').value;
 
-            if (!templateNumber || !city || !messageText.trim()) {
-                alert('Please fill in all required fields.');
+            if (!city) {
+                alert('Please fill in city.');
+                generateBtn.disabled = false;
+                loading.style.display = 'none';
+                return;
+            }
+
+            if (currentType === 'lineup') {
+                if (!templateNumber) {
+                    alert('Please select a template.');
+                    generateBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+                if (!messageText.trim()) {
+                    alert('Please paste the WhatsApp message.');
+                    generateBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+            } else if (currentType === 'mvp') {
+                if (!playerName.trim() || !venue.trim() || !date.trim() || !format.trim() || !time.trim()) {
+                    alert('Please fill in all required fields for MVP.');
+                    generateBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+            } else if (currentType === 'team-pic') {
+                if (!messageText.trim()) {
+                    alert('Please paste the WhatsApp message.');
+                    generateBtn.disabled = false;
+                    loading.style.display = 'none';
+                    return;
+                }
+            }
+
+            if ((currentType === 'mvp' || currentType === 'team-pic') && !imageUpload.files[0]) {
+                alert('Please upload an image.');
                 generateBtn.disabled = false;
                 loading.style.display = 'none';
                 return;
             }
 
             // Validate Template 4 with 6v6 format
-            if (templateNumber === '4' && !messageText.toLowerCase().includes('6v6')) {
+            if (templateNumber === '4' && currentType === 'lineup' && !messageText.toLowerCase().includes('6v6')) {
                 const confirm = window.confirm('Template 4 only works with 6v6 format. Your message doesn\'t seem to contain "6v6". Do you want to continue anyway?');
                 if (!confirm) {
                     generateBtn.disabled = false;
@@ -483,16 +859,40 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
             }
 
             try {
-                const response = await fetch('/generate-lineup', {
+                const formData = new FormData();
+                
+                if (currentType === 'lineup') {
+                    formData.append('templateNumber', templateNumber);
+                    formData.append('city', city);
+                    formData.append('messageText', messageText);
+                } else if (currentType === 'mvp') {
+                    formData.append('city', city);
+                    formData.append('playerName', playerName);
+                    formData.append('venue', venue);
+                    formData.append('date', date);
+                    formData.append('format', format);
+                    formData.append('time', time);
+                } else if (currentType === 'team-pic') {
+                    formData.append('city', city);
+                    formData.append('messageText', messageText);
+                }
+                
+                if (currentType === 'mvp' || currentType === 'team-pic') {
+                    formData.append('image', imageUpload.files[0]);
+                }
+
+                let endpoint = '';
+                if (currentType === 'lineup') {
+                    endpoint = '/generate-lineup';
+                } else if (currentType === 'mvp') {
+                    endpoint = '/generate-mvp';
+                } else if (currentType === 'team-pic') {
+                    endpoint = '/generate-team-pic';
+                }
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        templateNumber,
-                        city,
-                        messageText 
-                    })
+                    body: formData
                 });
 
                 const result = await response.json();
@@ -514,7 +914,7 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
                     alert('Error: ' + result.error);
                 }
             } catch (error) {
-                alert('Error generating lineup: ' + error.message);
+                alert('Error generating design: ' + error.message);
             } finally {
                 // Hide loading
                 generateBtn.disabled = false;
@@ -526,18 +926,41 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
             const dataGrid = document.getElementById('dataGrid');
             dataGrid.innerHTML = '';
 
-            const fields = [
-                { key: 'templateNumber', label: 'Template' },
-                { key: 'city', label: 'City' },
-                { key: 'date', label: 'Date' },
-                { key: 'venue', label: 'Venue' },
-                { key: 'format', label: 'Format' },
-                { key: 'time', label: 'Game Time' },
-                { key: 'team1', label: 'Team 1' },
-                { key: 'team2', label: 'Team 2' },
-                { key: 'team1Players', label: 'Team 1 Players', isArray: true },
-                { key: 'team2Players', label: 'Team 2 Players', isArray: true }
-            ];
+            let fields = [];
+            
+            if (currentType === 'lineup') {
+                fields = [
+                    { key: 'templateNumber', label: 'Template' },
+                    { key: 'city', label: 'City' },
+                    { key: 'date', label: 'Date' },
+                    { key: 'venue', label: 'Venue' },
+                    { key: 'format', label: 'Format' },
+                    { key: 'time', label: 'Game Time' },
+                    { key: 'team1', label: 'Team 1' },
+                    { key: 'team2', label: 'Team 2' },
+                    { key: 'team1Players', label: 'Team 1 Players', isArray: true },
+                    { key: 'team2Players', label: 'Team 2 Players', isArray: true }
+                ];
+            } else if (currentType === 'mvp') {
+                fields = [
+                    { key: 'templateNumber', label: 'Template' },
+                    { key: 'city', label: 'City' },
+                    { key: 'venue', label: 'Venue' },
+                    { key: 'date', label: 'Date' },
+                    { key: 'format', label: 'Format' },
+                    { key: 'time', label: 'Game Time' },
+                    { key: 'playerName', label: 'Player Name' }
+                ];
+            } else if (currentType === 'team-pic') {
+                fields = [
+                    { key: 'templateNumber', label: 'Template' },
+                    { key: 'city', label: 'City' },
+                    { key: 'date', label: 'Date' },
+                    { key: 'venue', label: 'Venue' },
+                    { key: 'format', label: 'Format' },
+                    { key: 'time', label: 'Game Time' }
+                ];
+            }
 
             fields.forEach(field => {
                 if (data[field.key]) {
@@ -563,6 +986,9 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 600) + 'px';
         });
+
+        // Initialize form for lineup type
+        updateFormForType();
     </script>
 </body>
 </html>

@@ -139,3 +139,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 node_modules/
 .wwebjs_auth/
+output/*
+media/image-*
+
+*.DS_Store*
