@@ -20,6 +20,7 @@ const time = args[5];
 const templateNumber = args[6];
 const imageUrl = args[7];
 const playerName = args[8] || '';
+const isTiger5 = String(args[9] || '').toLowerCase() === 'true';
 
 // Check if this is an MVP request (has playerName) or Team Pic request (no playerName)
 const isMvpRequest = playerName && playerName.trim() !== '';
@@ -28,7 +29,12 @@ if (templateNumber === "1" && isMvpRequest) {
   // MVP Template
   (async () => {
     try {
-      let templatePath = path.join(__dirname, 'templates', 'newtemplate_1.png');
+      let templatePath;
+      if (isTiger5) {
+        templatePath = path.join(__dirname, 'templates', 'tiger5-mvp.png');
+      } else {
+        templatePath = path.join(__dirname, 'templates', 'newtemplate_1.png');
+      }
       
       const outputPath = path.join(__dirname, 'output', `${matchId}_final.png`);
       const template = await loadImage(templatePath);
@@ -110,7 +116,12 @@ if (templateNumber === "1" && isMvpRequest) {
   // Team Pic Template
   (async () => {
     try {
-      let templatePath = path.join(__dirname, 'templates', 'teamtemplate_1.png');
+      let templatePath;
+      if (isTiger5) {
+        templatePath = path.join(__dirname, 'templates', 'tiger5-team.png');
+      } else {
+        templatePath = path.join(__dirname, 'templates', 'teamtemplate_1.png');
+      }
       
       const outputPath = path.join(__dirname, 'output', `${matchId}_final.png`);
       const template = await loadImage(templatePath);

@@ -319,6 +319,7 @@ app.post('/generate-lineup', upload.none(), async (req, res) => {
 app.post('/generate-mvp', upload.single('image'), async (req, res) => {
     try {
         const { city, venue, date, format, time, playerName } = req.body;
+        const isTiger5 = (req.body && (req.body.isTiger5 === true || String(req.body.isTiger5).toLowerCase() === 'true' || req.body.isTiger5 === 'on' || req.body.isTiger5 === '1'));
 
         if (!city || !venue || !date || !format || !time || !playerName || !playerName.trim()) {
             return res.status(400).json({ 
@@ -348,7 +349,7 @@ app.post('/generate-mvp', upload.single('image'), async (req, res) => {
         console.log('MVP Data:', data);
 
         // Build command for generateImageMvpTeam.js
-        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}" "${data.playerName}"`;
+        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}" "${data.playerName}" "${isTiger5}"`;
 
         console.log("Generating MVP design...");
 
@@ -390,6 +391,7 @@ app.post('/generate-mvp', upload.single('image'), async (req, res) => {
 app.post('/generate-team-pic', upload.single('image'), async (req, res) => {
     try {
         const { city, messageText } = req.body;
+        const isTiger5 = (req.body && (req.body.isTiger5 === true || String(req.body.isTiger5).toLowerCase() === 'true' || req.body.isTiger5 === 'on' || req.body.isTiger5 === '1'));
 
         if (!city || !messageText || !messageText.trim()) {
             return res.status(400).json({ 
@@ -423,7 +425,7 @@ app.post('/generate-team-pic', upload.single('image'), async (req, res) => {
         }
 
         // Build command for generateImageMvpTeam.js
-        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}"`;
+        const command = `node generateImageMvpTeam.js "${data.matchId}" "${data.date}" "${data.venue}" "${data.city}" "${data.format}" "${data.time}" "${data.templateNumber}" "${data.imageUrl}" "" "${isTiger5}"`;
 
         console.log("Generating team pic design...");
 

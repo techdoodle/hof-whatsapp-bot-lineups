@@ -525,6 +525,13 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
                     <input type="text" id="time" name="time" placeholder="Enter the game time (e.g., 8:00PM- 9:00 PM)">
                 </div>
 
+                <div class="form-group" id="tiger5Group" style="display: none;">
+                    <label style="display:flex;gap:8px;align-items:center;">
+                        <input type="checkbox" id="isTiger5" name="isTiger5">
+                        Tiger 5 venue (use Tiger 5 template for MVP/Team Pic)
+                    </label>
+                </div>
+
                 <div class="image-upload-section" id="imageUploadSection" style="display: none;">
                     <h3>📸 Upload Image</h3>
                     <div class="file-upload">
@@ -624,6 +631,7 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**<
                 dateGroup.style.display = 'none';
                 formatGroup.style.display = 'none';
                 timeGroup.style.display = 'none';
+                document.getElementById('tiger5Group').style.display = 'none';
                 imageUploadSection.style.display = 'none';
                 messageSection.style.display = 'block';
                 exampleSection.style.display = 'block';
@@ -697,6 +705,7 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**`
                 dateGroup.style.display = 'block';
                 formatGroup.style.display = 'block';
                 timeGroup.style.display = 'block';
+                document.getElementById('tiger5Group').style.display = 'block';
                 imageUploadSection.style.display = 'block';
                 messageSection.style.display = 'none';
                 exampleSection.style.display = 'none';
@@ -712,6 +721,7 @@ Note: HoF is not responsible for any injuries, loss, or theft on the premises**`
                 dateGroup.style.display = 'none';
                 formatGroup.style.display = 'none';
                 timeGroup.style.display = 'none';
+                document.getElementById('tiger5Group').style.display = 'block';
                 imageUploadSection.style.display = 'block';
                 messageSection.style.display = 'block';
                 exampleSection.style.display = 'block';
@@ -872,9 +882,11 @@ Game time: 9:30PM - 10:30PM`;
                     formData.append('date', date);
                     formData.append('format', format);
                     formData.append('time', time);
+                    formData.append('isTiger5', document.getElementById('isTiger5').checked);
                 } else if (currentType === 'team-pic') {
                     formData.append('city', city);
                     formData.append('messageText', messageText);
+                    formData.append('isTiger5', document.getElementById('isTiger5').checked);
                 }
                 
                 if (currentType === 'mvp' || currentType === 'team-pic') {
